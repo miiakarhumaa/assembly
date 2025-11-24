@@ -1,0 +1,20 @@
+main:
+    addq %rdi, %r9
+    je done             #tarkistaa, onko 0
+    rrmovq %rdi,%rcx
+    subq %rdi, %rcx
+    irmovq $1, %r8
+    jmp loop
+    
+loop:
+    addq %rsi,%rax
+    subq %r8, %rdi
+    rrmovq %rcx, %rdx
+    subq %rdi, %rdx
+    jne main
+    halt 
+    
+done:
+    halt
+    
+    
