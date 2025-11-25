@@ -1,3 +1,6 @@
+# irmovq $10, %rdi     #tekijä
+# irmovq $-6, %rsi     #tekijä
+
 main:
     addq %rdi, %r9
     je done             #tarkistaa, onko 0¨
