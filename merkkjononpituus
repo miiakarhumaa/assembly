@@ -1,0 +1,18 @@
+
+.pos 0
+main:
+    irmovq $1234, %rax
+    irmovq oma, %rbx
+    rmmovq %rax, (%rbx)
+    mrmovq (%rbx), %rdi
+    jmp merkkijono
+    halt
+
+.pos 0x400
+oma:
+
+.pos 0x410
+merkkijono:
+    .byte 'H'
+    .byte 'e'
+    .byte 'i'
