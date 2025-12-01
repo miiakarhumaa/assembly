@@ -1,18 +1,30 @@
+.align 8
+.pos 0x400
+.quad 0x41
+.quad 0x42
+.quad 0x43
+.quad 0x00
 
 .pos 0
 main:
-    irmovq $1234, %rax
-    irmovq oma, %rbx
-    rmmovq %rax, (%rbx)
-    mrmovq (%rbx), %rdi
-    jmp merkkijono
-    halt
-
-.pos 0x400
+    irmovq oma, %rcx     # RCX = 1024
+    irmovq $1, %rdx
+    irmovq $8, %rbx       # yhden quadin koko
+    jmp liiku
+    
+.pos 0x3f8
 oma:
 
-.pos 0x410
-merkkijono:
-    .byte 'H'
-    .byte 'e'
-    .byte 'i'
+.pos 0x50
+liiku:
+    addq %rbx, %rcx       # RCX = 1024 + 8 = 1032 (seuraava muistipaikka)
+    mrmovq (%rcx), %rsp
+    irmovq $0, %r8
+    addq %rsp, %r8
+    je done
+    addq %rdx, %rax
+    jmp liiku
+    
+done:
+    halt
+    
