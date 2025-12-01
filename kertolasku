@@ -1,0 +1,41 @@
+# irmovq $10, %rdi     #tekijä
+# irmovq $-6, %rsi     #tekijä
+
+main:
+    addq %rdi, %r9
+    je done             #tarkistaa, onko 0¨
+    rrmovq %rdi,%rcx
+    subq %r10, %rcx
+    jl negatiivinen
+    rrmovq %rdi,%rcx
+    subq %rdi, %rcx
+    irmovq $1, %r8
+    jmp loop
+    
+negatiivinen:
+    rrmovq %rdi,%rcx
+    addq %rdi, %rcx
+    irmovq $1, %r8
+    jmp loopk
+    
+loop:
+    addq %rsi,%rax
+    subq %r8, %rdi
+    rrmovq %rcx, %rdx
+    subq %rdi, %rdx
+    jne loop
+    jmp done 
+
+loopk:
+    addq %rsi,%rax
+    subq %r8, %rdi
+    rrmovq %rcx, %rdx
+    subq %rdi, %rdx
+    jne loopk
+    subq %rax, %r10
+    rrmovq %r10, %rax
+    jmp done 
+    
+done:
+    halt
+    
