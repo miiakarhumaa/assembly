@@ -2,10 +2,10 @@
 # irmovq $-6, %rsi     #jakaja
 # rax = tulos
 
-main:
+jakolaskuu:
     irmovq $1, %rdx  #tallennetaan 1
     addq %rsi, %rcx #onko 0
-    je done         #onko 0
+    je donej        #onko 0
     irmovq $0, %rcx
     addq %rsi, %rcx
     jl poistamerkkijakaja
@@ -40,12 +40,12 @@ lisaamerkki:
     irmovq $0, %rbx
     subq %rax, %rbx
     rrmovq %rbx, %rax
-    jmp done
+    jmp donej
     
 valmis:
     subq %rsp, %rbp
-    je done
+    je donej
     jmp lisaamerkki
     
-done:
-    halt
+donej:
+    ret
