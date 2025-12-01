@@ -1,0 +1,83 @@
+
+.pos0
+irmovq $50779, %r13
+
+
+main:
+    irmovq pino,%rsp    # pino-osoitin
+    irmovq pino,%rbp    # pinon alkuosoite
+    rrmovq %r13, %r14
+    call siirra14
+    call siirra13
+    jmp done
+    
+siirra14:
+    irmovq $0xF000,%r9
+    andq %r9,%r14
+    rrmovq %r14,%rdi
+    irmovq $4096,%rsi
+    call jakolaskuu
+    subq %rax,%r10
+    rrmovq %r10,%r14
+    ret
+    
+siirra13:
+    irmovq $0x0FFF,%r9
+    andq %r9,%r13
+    ret
+
+.pos 0x400
+pino:                  # pinon alkuosoite   
+
+jakolaskuu:
+    irmovq $1, %rdx  #tallennetaan 1
+    addq %rsi, %rcx #onko 0
+    je donej        #onko 0
+    irmovq $0, %rcx
+    addq %rsi, %rcx
+    jl poistamerkkijakaja
+    irmovq $0, %rcx
+    addq %rdi, %rcx
+    jl poistamerkkijaettava
+    jmp jakolasku
+
+jakolasku:
+    subq %rsi, %rdi
+    jl valmis
+    addq %rdx, %rax   #lisätään 1
+    jmp jakolasku
+    
+poistamerkkijakaja:
+    subq %rsi, %rbx
+    rrmovq %rbx, %rsi
+    irmovq $-1, %rsp   #merkataan rekisteriin, että on neg
+    irmovq $0, %rcx
+    addq %rdi, %rcx
+    jl poistamerkkijaettava
+    jmp jakolasku
+    
+poistamerkkijaettava:
+    irmovq $0, %rbx
+    subq %rdi, %rbx
+    rrmovq %rbx, %rdi
+    irmovq $-1, %rbp   #merkataan rekisteriin, että on neg
+    jmp jakolasku
+    
+lisaamerkki:
+    irmovq $0, %rbx
+    subq %rax, %rbx
+    rrmovq %rbx, %rax
+    jmp donej
+    
+valmis:
+    subq %rsp, %rbp
+    je donej
+    jmp lisaamerkki
+    
+donej:
+    ret
+
+done:
+    halt
+    
+    
