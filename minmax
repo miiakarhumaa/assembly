@@ -1,0 +1,43 @@
+.pos 0x400
+pino:
+
+.pos 0
+    irmovq pino,%rbp # pinon alkuosoite 
+    irmovq pino,%rsp # pinon ylimmän muistipaikan osoite
+    irmovq $5,%rcx   # pinoon talletettava arvo
+    pushq %rcx
+    irmovq $7,%rcx
+    pushq %rcx
+    irmovq $4,%rcx
+    pushq %rcx
+    irmovq $10,%rcx
+    pushq %rcx
+    irmovq $20,%rcx
+    pushq %rcx
+    irmovq $-1,%rcx
+    pushq %rcx
+
+main:
+    popq %rcx
+    rrmovq %rcx,%rsi
+    rrmovq %rcx,%rdi
+
+loop:
+    popq %rcx
+    irmovq $0, %r8
+    rrmovq %rcx, %r8
+    subq %rsi, %r8
+    cmovl %rcx, %rsi
+    irmovq $0, %r8
+    rrmovq %rcx, %r8
+    subq %rdi, %r8
+    cmovg %rcx, %rdi
+    irmovq $0, %r8
+    addq %rbp, %r8
+    subq %rsp,%r8
+    je done
+    jmp loop
+    
+done:
+    halt
+    
