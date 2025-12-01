@@ -1,0 +1,80 @@
+.pos 0x400
+pino:
+
+.pos 0
+    irmovq pino,%rbp # pinon alkuosoite 
+    irmovq pino,%rsp # pinon ylimmän muistipaikan osoite
+    irmovq $7,%rcx   # pinoon talletettava arvo
+    pushq %rcx
+    irmovq $7,%rcx
+    pushq %rcx
+    irmovq $10,%rcx
+    pushq %rcx
+
+main:
+    irmovq $1, %rdx
+    irmovq $0, %rdi
+    irmovq $0, %rsi
+    jmp keskiarvo
+    
+keskiarvo:
+    popq %rcx        # pinon päällimmäinen arvo rekisteriin
+    addq %rcx, %rdi  #summa
+    addq %rdx, %rsi  #lukujen määrä
+    irmovq $0, %r8
+    addq %rbp, %r8
+    subq %rsp,%r8
+    je jakolaskuu
+    jmp keskiarvo
+    
+jakolaskuu:
+    irmovq $1, %rdx  #tallennetaan 1
+    addq %rsi, %rcx #onko 0
+    je done         #onko 0
+    irmovq $0, %rcx
+    addq %rsi, %rcx
+    jl poistamerkkijakaja
+    irmovq $0, %rcx
+    addq %rdi, %rcx
+    jl poistamerkkijaettava
+    jmp jakolasku
+
+jakolasku:
+    subq %rsi, %rdi
+    jl valmis
+    addq %rdx, %rax   #lisätään 1
+    jmp jakolasku
+    
+poistamerkkijakaja:
+    subq %rsi, %rbx
+    rrmovq %rbx, %rsi
+    irmovq $-1, %rsp   #merkataan rekisteriin, että on neg
+    irmovq $0, %rcx
+    addq %rdi, %rcx
+    jl poistamerkkijaettava
+    jmp jakolasku
+    
+poistamerkkijaettava:
+    irmovq $0, %rbx
+    subq %rdi, %rbx
+    rrmovq %rbx, %rdi
+    irmovq $-1, %rbp   #merkataan rekisteriin, että on neg
+    jmp jakolasku
+    
+lisaamerkki:
+    irmovq $0, %rbx
+    subq %rax, %rbx
+    rrmovq %rbx, %rax
+    jmp done
+    
+valmis:
+    subq %rsp, %rbp
+    je done
+    jmp lisaamerkki
+    
+done:
+    halt
+
+    
+    
+
