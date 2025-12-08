@@ -1,0 +1,34 @@
+irmovq $51,%r8      #jaettava
+#vastaus = %rax
+
+main:
+    irmovq $0x01,%rcx   #maski
+    irmovq $0x01,%rdx   #puolikas
+    irmovq $0,%rax      #alustetaan summa
+    jmp tarkistae
+    
+tarkistae:
+    addq %rcx,%rcx      #siirretään maski seuraavaan bittiin
+    rrmovq %r8,%rsi     #haetaan jaettava
+    andq %rcx,%rsi
+    je tarkista         #bitti on 0
+    jmp yksi            #bitti on 1
+    
+tarkista:
+    rrmovq %r8,%rsi      #tarkistetaan, ollaanko luvun lopussa
+    subq %rcx,%rsi       #jos ollaan, maski on isompi kuin luku
+    jl done
+    addq %rdx,%rdx      #siirretään puolikas seuraavaan
+    addq %rcx,%rcx      #siirretään maski seuraavaan bittiin
+    rrmovq %r8,%rsi     #haetaan jaettava
+    andq %rcx,%rsi
+    je tarkista         #bitti on 0
+    jmp yksi            #bitti on 1
+
+yksi:
+    addq %rdx,%rax
+    jmp tarkista
+
+done: 
+    halt
+    
