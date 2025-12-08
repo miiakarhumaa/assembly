@@ -1,0 +1,75 @@
+irmovq $123456789,%r11   #syöte
+irmovq $987654321,%r12   #syöte
+#vastaus: %rax
+
+main:
+    irmovq pino,%rbp    #pinon alkuosoite 
+    irmovq pino,%rsp    #pinon ylimmän muistipaikan osoite
+    irmovq $0x01,%rcx   #maski
+    irmovq $0,%rdx      #bittisiirron määrä
+    irmovq $1,%r13      #vakio 1
+    irmovq $0,%rax      #alustetaan summa
+    call kertoja
+    jmp bitit1
+
+#kertoja = %r9, kerrottava = %r10
+kertoja:
+    rrmovq %r11,%r8
+    subq %r12,%r8
+    jl donel
+    rrmovq %r12,%r9
+    rrmovq %r11,%r10
+    ret
+    
+donel:
+    rrmovq %r11,%r9
+    rrmovq %r12,%r10
+    ret
+
+bitit1:
+    rrmovq %r9,%r8      #kertoja ja sen kopio
+    andq %rcx,%r8       #otetaan yksi bitti
+    je maski            #bitti on nolla
+    rrmovq %r10,%r8     #kerrottava ja sen kopio
+    pushq %r8
+    jmp maski
+
+bitit2:
+    rrmovq %r9,%r8      #kertoja ja sen kopio
+    andq %rcx,%r8       #otetaan yksi bitti
+    je maski            #bitti on nolla
+    rrmovq %rdx,%rbx    #laskuri rbx
+    rrmovq %r10,%r8     #kerrottava ja sen kopio
+    jmp bittisiirto
+    
+maski:
+    addq %rcx,%rcx      #siirretään maski seuraavaan bittiin
+    rrmovq %r9,%r8      #kertoja ja sen kopio
+    subq %rcx,%r8
+    jl summa
+    addq %r13,%rdx
+    jmp bitit2           #mennään käsittelemään seuraava bitti
+    
+bittisiirto: 
+    addq %r8,%r8
+    subq %r13,%rbx
+    jg bittisiirto
+    pushq %r8
+    jmp maski
+
+summa:
+    popq %rcx           #pinon päällimmäinen arvo rekisteriin
+    addq %rcx, %rax     #summa
+    irmovq $0, %r8
+    addq %rbp, %r8
+    subq %rsp,%r8       #tarkistetaan, onko pino tyhjä
+    je done
+    jmp summa
+    
+.pos 0x400
+pino:
+#tallennetaan osasummat pinoon
+    
+done:
+    halt
+    
