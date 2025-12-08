@@ -1,0 +1,128 @@
+irmovq $12,%r8      # kanta
+irmovq $6,%r9       # eksponentti
+irmovq $7,%r10      # modulo
+# vastaus = %rax
+
+# vastaus = %rcx
+# kanta = %rdx
+
+main:
+    irmovq pino,%rbp    # pinon alkuosoite 
+    irmovq pino,%rsp    # pinon ylimmän muistipaikan osoite
+    pushq %r10
+    pushq %r9
+    call kertolasku
+    halt
+    
+    pushq %r10
+    pushq %r8
+    call modulo         # suoritetaan modulo
+    rrmovq %rax,%rdx    # tallennetaan kanta
+    irmovq $16,%rsi
+    addq %rsi,%rsp      # tyhjennetään pino
+    irmovq $1,%rcx      # vastaus = 1
+    call loop
+    jmp done
+    
+
+
+#------------------------------modulo----------------------------------
+#kaksi argumenttia
+#1: kanta / jaettava, %r11
+#2: modulo / jakaja, %r12
+#vastaus = %rax
+
+modulo:
+    mrmovq 8(%rsp),%r11     # jaettava
+    mrmovq 16(%rsp),%r12    # jakaja
+    irmovq $0,%rax          # alustetaan tulos
+    jmp lasku
+    
+lasku:
+    rrmovq %r11,%rax        # tallennetaan mahd. jakojäännös
+    subq %r12,%r11
+    jl liiansuuri
+    addq %r12,%r12
+    jmp lasku
+
+liiansuuri:
+    rrmovq %rax,%r11        # palautetaan edellinen erotus 
+    mrmovq 16(%rsp),%r12    # palautetaan alkuperäinen jakaja
+    subq %r12,%r11  
+    jle donemodulo
+    rrmovq %rax,%r11        # palautetaan edellinen erotus
+    jmp lasku
+    
+donemodulo:
+    ret
+    
+#------------------------------kertolasku----------------------------------
+#kaksi argumenttia
+#1: kertoja, %r11
+#2: kerrottava, %r12
+#vastaus = %rax
+
+kertolasku:
+    irmovq $0x01,%rsi   # maski
+    irmovq $0,%rdi      # bittisiirron määrä
+    irmovq $0,%rax      # alustetaan summa/tulos
+    call kertoja
+    irmovq $1,%rbx      # vakio 1
+    jmp bitit1
+
+kertoja:                    #valitaan kertojaksi pienempi luku
+    mrmovq 16(%rsp),%r11
+    mrmovq 24(%rsp),%r12
+    subq %r12,%r11
+    jl donel
+    mrmovq 16(%rsp),%r12
+    mrmovq 24(%rsp),%r11
+    ret
+    
+donel:
+    mrmovq 16(%rsp),%r11
+    mrmovq 24(%rsp),%r12
+    ret
+
+bitit1:
+    rrmovq %r11,%r13     # kertoja ja sen kopio
+    andq %rsi,%r13       # otetaan yksi bitti
+    je maski             # bitti on nolla
+    addq %r10,%rax       # lisätään tulokseen
+    jmp maski
+
+bitit2:
+    rrmovq %r11,%r13      # kertoja ja sen kopio
+    andq %rsi,%r13        # otetaan yksi bitti
+    je maski              # bitti on nolla
+    rrmovq %rdi,%r14      # laskuri rdi
+    jmp bittisiirto
+    
+maski:
+    addq %rsi,%rsi        # siirretään maski seuraavaan bittiin
+    rrmovq %r11,%r13      # kertoja ja sen kopio
+    subq %rsi,%r13
+    jl done
+    addq %rbx,%rdi
+    jmp bitit2            # mennään käsittelemään seuraava bitti
+    
+bittisiirto: 
+    rrmovq %r10,%r13      # kerrottava ja sen kopio
+    addq %r13,%r13
+    subq %rbx,%r14
+    jg bittisiirto
+    addq %r13,%rax
+    jmp maski
+    
+donekertolasku:
+    ret
+    
+#----------------------------------------------------------------
+
+.pos 0x400
+pino:
+
+done: 
+    halt
+    
+    
