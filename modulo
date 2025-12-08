@@ -1,0 +1,32 @@
+irmovq $15,%r8   #jaettava
+irmovq $1,%r9   #jakaja
+#vastaus: %rax
+
+main:
+    rrmovq %r9,%rcx     # alkuperäinen jakaja ja sen kopio
+    jmp modulo
+    
+modulo:
+    rrmovq %r8,%rax  #tallennetaan mahd. jakojäännös
+    subq %rcx,%r8
+    jl liiansuuri
+    addq %rcx,%rcx
+    jmp modulo
+
+liiansuuri:
+    rrmovq %rax,%r8
+    rrmovq %r9,%rcx
+    subq %r9,%r8
+    jle done
+    rrmovq %rax,%r8
+    jmp modulo
+    
+jako:
+    rrmovq %r8,%rax  #tallennetaan mahd. jakojäännös
+    subq %r9,%r8
+    jge jako
+    ret
+
+done: 
+    halt
+    
