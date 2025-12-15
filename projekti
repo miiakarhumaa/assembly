@@ -50,7 +50,7 @@ onkoparillinen:
 
 prime:
     rrmovq %rcx,%rax
-    halt                    # lopetetaan suoritus ja palautetaan 2
+    halt                    # lopetetaan suoritus ja palautetaan prime-numero
     
 onparillinen:               # kyseessä parillinen luku
     irmovq $-1,%rax         # palautetaan -1 merkiksi, että ei ole prime
@@ -113,15 +113,32 @@ millerrabin:                # millerrabin algoritmi
     
     ret
 
-forloop:                    # for (;;) 
+forloop:                    # for (;;)
     rrmovq %r9,%r11         # annetaan argumentti
-    call parillinen         # testataan, onko p parillinen
-    irmovq $-1,%r9          # testataan, saatiinko -1 eli parillinen
+    call parillinen         # if (p & 1)
+    irmovq $0,%r9           # ...
     subq %rax,%r9           # ...
-    je composite3           # palautetaan composite 
+    je prime                # return prime 
     
+    pushq %r8               # tallennetaan witness
+    rrmovq %r9,%r8          # annetaan argumentti p
+    call puolitus           # p = halve(p)
+    rrmovq %rax,%r9         # tallennetaan vastaus
+    popq %r8                # palautetaan witness
     
-    jmp forloop
+    rrmovq %rcx,%r10        # annetaan argumentti, r8 ja r9 valmiina
+    call eksmod             # result = modpow(witness, p, number)
+    
+    irmovq $1,%r13          # if (result == 1)
+    subq %rax,%r13          # ...
+    je forloop              # continue;
+    
+    irmovq $-1,%r13         # if (result == number - 1)
+    addq %r12,%r13          # ...
+    subq %rax,%r13          # ...
+    je prime                # return prime
+    
+    jmp composite3
     
     
 #int miller_rabin_round(const u64 number, const u64 witness)
@@ -161,12 +178,14 @@ eksmod:
     pushq %r8               # tallennetaan pääohjelman arvot
     pushq %r9               # ...
     pushq %rcx              # ...
+    pushq %r14              # ...
     
     call kanta              # kanta := kanta % modulo
     irmovq $1,%rcx          # vastaus = 1
     call loope              # for jokainen bitti eksponentissa LSB -> MSB:
     
-    popq %rcx               # palautetaan pääohjelman arvot
+    popq %r14               # palautetaan pääohjelman arvot
+    popq %rcx               # ...
     popq %r9                # ...
     popq %r8                # ...
     
@@ -273,8 +292,6 @@ donemodulo:
 # %rax
 
 kertolasku:
-    pushq %r14              # tallennetaan pääohjelman arvo
-
     irmovq $0x01,%rsi       # maski, pienin bitti
     irmovq $0,%rdi          # bittisiirron laskuri
     irmovq $0,%rax          # alustetaan summa/tulos
@@ -326,7 +343,6 @@ bittisiirto:
     jmp maski       
     
 donekertolasku:
-    popq %r14               # palautetaan pääohjelman arvo        
     ret
 
 #---------------------------------jako kahdella---------------------------------
@@ -376,10 +392,16 @@ pino:
 .align 8
 .quad 4
 .quad 9
-.quad 4
+.quad 10
+.quad 71
 .quad 0
+
+#2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97. 
+
 
 #-----------------------------------REFLECTION----------------------------------
 #Tallensin arvot aina kun mahdollista samoihin rekistereihin, joissa niitä 
 #käytettiin aliohjelmissa, jotta välttyy ylimääräisiltä rekisterisiirroilta 
+    
+    
     
