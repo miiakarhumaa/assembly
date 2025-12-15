@@ -1,3 +1,30 @@
+#-----------------------------------REFLECTION----------------------------------
+# TKJ module 4 project 2025 Prime number
+# Miia Karhumaa, 2510050
+
+# Instruction estimates:
+# multiplication: 400-700
+# division by two: 200-400
+# modulo: 300-500
+# exponent modulo: 78000
+# I made the estimates by looking at the amount of instruvtions in the code and
+# asked ChatGPT to estimate the number of the loops for 64 bit numbers. 
+
+# The algorithm gives some false positives, especially Carmichael numbers,
+# because these numbers pass the tests of the simplified algorithm that is 
+# used in the project.  
+
+# "addq %rax, %rax" is a single command for shifting bits left, but this only 
+# shifts them by one position. For more shifts, it needs to be repeated. Some
+# other architectures have built-in shifting operations.
+
+# Loops and subroutines could probably be optimized, especially the multiplication.
+
+# While coding, I didn't make any optimation choices other than minimizing the 
+# number of register moves. For example I calculated straight to the register 
+# instead of making copies everytime when I didn't need to save the original value.
+# Then in the test run, the instruction count stayed in 5 digits, so I decided 
+# not to touch it anymore because it is working.
 
 #------------------------------------main---------------------------------------
 
@@ -386,11 +413,5 @@ puolitusdone:
 #-------------------------------------------------------------------------------
 
 .pos 0x1000
-pino:
-
-#-----------------------------------REFLECTION----------------------------------
-#Tallensin arvot aina kun mahdollista samoihin rekistereihin, joissa niitä 
-#käytettiin aliohjelmissa, jotta välttyy ylimääräisiltä rekisterisiirroilta 
-    
-    
+pino:    
     
