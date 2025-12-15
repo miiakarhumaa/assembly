@@ -8,46 +8,52 @@ irmovq $0x1800, %r8         # testattavien arvojen alku muistissa
 main:
     irmovq pino,%rbp        # pinon alkuosoite 
     irmovq pino,%rsp        # pinon ylimmän muistipaikan osoite
-
-    call loop               # tarkistetaan yksi kerrallaan
+    rrmovq %r8,%r14         # siirretään muistisosoite eri rekisteriin
+    call mainloop               # tarkistetaan yksi kerrallaan
 
     halt
     
-loop:
-    mrmovq (%r8),%rcx       # haetaan käsiteltävä luku
+mainloop:
+    mrmovq (%r14),%rcx      # haetaan käsiteltävä luku
     irmovq $0,%r9           # tarkistetaan, onko 0
     addq %rcx,%r9           # ...
     je loppu                # jos on, saavutettiin listan loppu
     call parillinen         # tarkistetaan, onko parillinen
-    irmovq $0,%r9           # testataan, saatiinko -1 eli parillinen
-    addq %rcx,%r9           # ...
-    jl seuraava             # jos saatiin, siirrytään seuraavaan lukuun
+    irmovq $-1,%r9          # testataan, saatiinko -1 eli parillinen
+    subq %rax,%r9           # ...
+    je seuraava             # jos saatiin, siirrytään seuraavaan lukuun
     call loopmillerrabin    # muussa tapauksessa käytetään algoritmia
     jmp seuraava            # jos ohjelma palaa, siirrytään seuraavaan lukuun
     
 seuraava:
     irmovq $8, %r9          # siirrytään seuraavaan muistipaikkaan
-    addq %r9, %r8           # ...
-    jmp loop
+    addq %r9, %r14          # ...
+    jmp mainloop
     
 parillinen:
     irmovq $2,%r10          # tarkistetaan, onko 2
     subq %rcx,%r10          # ...
     je prime                # jos 2, saatiin vastaus
-    rrmovq %rcx,%rdx        # otetaan kopio
+    rrmovq %rcx,%r11        # annetaan argumentti
+    call onkoparillinen     # testataan parillisuus
+    ret
+    
+onkoparillinen:
+    # r11 = testattava luku
     irmovq $0x01,%r9        # maski
-    andq %r9,%rdx           # otetaan viimeinen bitti
+    andq %r9,%r11           # otetaan viimeinen bitti
     irmovq $0,%r10          # tarkistetaan, onko viimeinen 0 eli parillinen
-    addq %rdx,%r10          # ...
+    addq %r11,%r10          # ...
     je onparillinen         # jos parillinen
-    ret                     # jos ei, palataan looppiin
+    irmovq $0,%rax          # palautetaan 0
+    ret                     # jos ei, palataan takaisin
 
 prime:
     rrmovq %rcx,%rax
     halt                    # lopetetaan suoritus ja palautetaan 2
     
 onparillinen:               # kyseessä parillinen luku
-    irmovq $-1,%rcx         # palautetaan -1 merkiksi, että ei ole prime
+    irmovq $-1,%rax         # palautetaan -1 merkiksi, että ei ole prime
     ret
     
 done:                       # kyseinen subroutine on valmis
@@ -56,33 +62,39 @@ done:                       # kyseinen subroutine on valmis
 loppu:                      # saavutettiin listassa 0
     halt
     
-composite:                  # kyseessä composite luku
-    ret
+composite2:                 # kyseessä composite luku
+    popq %r13               # poistetaan edellisen call-kutsun ret pinosta
+    ret                     # palataan mainlooppiin
+
+composite3:                 # kyseessä composite luku
+    popq %r13               # poistetaan kahden edellisen call-kutsun ret
+    popq %r13               # ...
+    ret                     # palataan mainlooppiin
 
 loopmillerrabin:            # testataan kaikille eri witnesseille
-    irmovq $2,%r8          # witness
+    irmovq $2,%r8           # witness
     call millerrabin
-    irmovq $3,%r8          # witness
+    irmovq $3,%r8           # witness
     call millerrabin
-    irmovq $5,%r8          # witness
+    irmovq $5,%r8           # witness
     call millerrabin
-    irmovq $7,%r8          # witness
+    irmovq $7,%r8           # witness
     call millerrabin
-    irmovq $11,%r8         # witness
+    irmovq $11,%r8          # witness
     call millerrabin
-    irmovq $13,%r8         # witness
+    irmovq $13,%r8          # witness
     call millerrabin
-    irmovq $17,%r8         # witness
+    irmovq $17,%r8          # witness
     call millerrabin
-    irmovq $19,%r8         # witness
+    irmovq $19,%r8          # witness
     call millerrabin
-    irmovq $23,%r8         # witness
+    irmovq $23,%r8          # witness
     call millerrabin
-    irmovq $29,%r8         # witness
+    irmovq $29,%r8          # witness
     call millerrabin
-    irmovq $31,%r8         # witness
+    irmovq $31,%r8          # witness
     call millerrabin
-    irmovq $37,%r8         # witness
+    irmovq $37,%r8          # witness
     call millerrabin
     ret
 
@@ -92,21 +104,25 @@ millerrabin:                # millerrabin algoritmi
     subq %rdx,%r9           # ...
     
     rrmovq %rcx,%r10        # annetaan argumentti, r8 ja r9 on valmiina
-    pushq %rcx              # tallennetaan pääohjelman arvot
-    pushq %r9               # ...
-    pushq %r8               # ...
     call eksmod             # modpow(witness, p, number)
-    popq %r8                # palautetaan pääohjelman arvot
-    popq %r9                # ...
-    popq %rcx               # ...
     irmovq $1,%rdx          # if (modpow(witness, p, number) != 1)
     subq %rax,%rdx          # ...
-    jne composite           # return COMPOSITE
+    jne composite2          # return COMPOSITE
     
-    
-     
+    jmp forloop             # for (;;) {
     
     ret
+
+forloop:                    # for (;;) 
+    rrmovq %r9,%r11         # annetaan argumentti
+    call parillinen         # testataan, onko p parillinen
+    irmovq $-1,%r9          # testataan, saatiinko -1 eli parillinen
+    subq %rax,%r9           # ...
+    je composite3           # palautetaan composite 
+    
+    
+    jmp forloop
+    
     
 #int miller_rabin_round(const u64 number, const u64 witness)
 #{
@@ -142,9 +158,18 @@ millerrabin:                # millerrabin algoritmi
 # %rax
 
 eksmod:
+    pushq %r8               # tallennetaan pääohjelman arvot
+    pushq %r9               # ...
+    pushq %rcx              # ...
+    
     call kanta              # kanta := kanta % modulo
     irmovq $1,%rcx          # vastaus = 1
     call loope              # for jokainen bitti eksponentissa LSB -> MSB:
+    
+    popq %rcx               # palautetaan pääohjelman arvot
+    popq %r9                # ...
+    popq %r8                # ...
+    
     ret
 
 kanta:
@@ -248,6 +273,8 @@ donemodulo:
 # %rax
 
 kertolasku:
+    pushq %r14              # tallennetaan pääohjelman arvo
+
     irmovq $0x01,%rsi       # maski, pienin bitti
     irmovq $0,%rdi          # bittisiirron laskuri
     irmovq $0,%rax          # alustetaan summa/tulos
@@ -299,6 +326,7 @@ bittisiirto:
     jmp maski       
     
 donekertolasku:
+    popq %r14               # palautetaan pääohjelman arvo        
     ret
 
 #---------------------------------jako kahdella---------------------------------
@@ -341,13 +369,14 @@ puolitusdone:
     
 #-------------------------------------------------------------------------------
 
-.pos 0x500
+.pos 0x1000
 pino:
 
 .pos 0x1800
 .align 8
+.quad 4
 .quad 9
-.quad 7
+.quad 4
 .quad 0
 
 #-----------------------------------REFLECTION----------------------------------
