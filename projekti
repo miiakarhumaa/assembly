@@ -1,7 +1,3 @@
-#--------------------------------poistettavat-----------------------------------
-irmovq $0x1800, %r8         # testattavien arvojen alku muistissa
-
-#POISTA .pos0x1800 ja quad käskyt lopusta
 
 #------------------------------------main---------------------------------------
 
@@ -9,7 +5,7 @@ main:
     irmovq pino,%rbp        # pinon alkuosoite 
     irmovq pino,%rsp        # pinon ylimmän muistipaikan osoite
     rrmovq %r8,%r14         # siirretään muistisosoite eri rekisteriin
-    call mainloop               # tarkistetaan yksi kerrallaan
+    call mainloop           # tarkistetaan yksi kerrallaan
 
     halt
     
@@ -18,6 +14,9 @@ mainloop:
     irmovq $0,%r9           # tarkistetaan, onko 0
     addq %rcx,%r9           # ...
     je loppu                # jos on, saavutettiin listan loppu
+    irmovq $1,%r9           # tarkistetaan, onko 1
+    subq %rcx,%r9           # ...
+    je seuraava             # jätetään 1 välistä
     call parillinen         # tarkistetaan, onko parillinen
     irmovq $-1,%r9          # testataan, saatiinko -1 eli parillinen
     subq %rax,%r9           # ...
@@ -59,8 +58,9 @@ onparillinen:               # kyseessä parillinen luku
 done:                       # kyseinen subroutine on valmis
     ret
 
-loppu:                      # saavutettiin listassa 0
-    halt
+loppu:                      # saavutettiin listassa 0, ei prime numeroita
+    irmovq $0,%rax          # palautetaan 0
+    halt                    # lopetetaan ohjelma
     
 composite2:                 # kyseessä composite luku
     popq %r13               # poistetaan edellisen call-kutsun ret pinosta
@@ -387,17 +387,6 @@ puolitusdone:
 
 .pos 0x1000
 pino:
-
-.pos 0x1800
-.align 8
-.quad 4
-.quad 9
-.quad 10
-.quad 71
-.quad 0
-
-#2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97. 
-
 
 #-----------------------------------REFLECTION----------------------------------
 #Tallensin arvot aina kun mahdollista samoihin rekistereihin, joissa niitä 
