@@ -1,0 +1,286 @@
+#--------------------------------poistettavat-----------------------------------
+irmovq $0x1800, %r8         # testattavien arvojen alku muistissa
+
+#POISTA .pos0x1800 ja quad käskyt lopusta
+
+#------------------------------------main---------------------------------------
+
+main:
+    irmovq pino,%rbp        # pinon alkuosoite 
+    irmovq pino,%rsp        # pinon ylimmän muistipaikan osoite
+
+    call loop               # tarkistetaan yksi kerrallaan
+
+    halt
+    
+loop:
+    mrmovq (%r8),%rax       # haetaan käsiteltävä luku
+    irmovq $0,%r9
+    addq %rax,%r9           # tarkistetaan, onko 0
+    je loopdone             # jos on, saavutettiin listan loppu
+    call parillinen         # tarkistetaan, onko parillinen
+    irmovq $0,%r9
+    addq %rax,%r9           # testataan, saatiinko -1
+    jl seuraava             # jos saatiin, siirrytään seuraavaan lukuun
+    halt
+    
+seuraava:
+    irmovq $8, %r9
+    addq %r9, %r8           # siirrytään seuraavaan 
+    jmp loop
+    
+loopdone:
+    ret
+    
+parillinen:
+    irmovq $2,%r10
+    subq %rax,%r10          # tarkistetaan, onko 2
+    je onkaksi              # jos 2, saatiin vastaus
+    rrmovq %rax,%rcx        # otetaan kopio
+    irmovq $0x01,%r9        # maski
+    andq %r9,%rcx           # otetaan viimeinen bitti
+    irmovq $0,%r10
+    addq %rcx,%r10          # tarkistetaan, onko viimeinen 0 eli parillinen
+    je onparillinen         # jos parillinen
+    ret                     # palataan käsittelyyn
+
+onkaksi:
+    halt                    # lopetetaan suoritus ja palautetaan 2
+    
+onparillinen:
+    irmovq $-1,%rax         # palautetaan -1 merkiksi, että ei ole prime
+    ret
+    
+
+
+#-----------------------tallennus ja palautus esimerkki-------------------------
+
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    call toiminto
+    popq %r13
+    popq %r12
+    popq %r11
+
+#-----------------------------eksponenttimodulo---------------------------------
+#käyttää kaikkia rekistereitä pinorekistereitä lukuun ottamatta
+#argumentit:
+# %r8 = kanta
+# %r9 = eksponentti 
+# %r10 = modulo
+#välitulokset:
+# vastaus = %rcx
+# kanta = %rdx
+#vastaus: 
+# %rax
+
+eksmod:
+    call kanta              # kanta := kanta % modulo
+    irmovq $1,%rcx          # vastaus = 1
+    call loope              # for jokainen bitti eksponentissa LSB -> MSB:
+    halt
+
+kanta:
+    rrmovq %r8,%r11         # laitetaan argumentit pinoon
+    rrmovq %r10,%r12        # ...
+    call modulo             # suoritetaan modulo
+    rrmovq %rax,%rdx        # tallennetaan vastaus
+    ret
+    
+loope:
+    irmovq $0x01,%rbx       # maski, pienin bitti
+    jmp loope1
+    
+loope1:                     # tarkistetaan bitti
+    rrmovq %r9,%r13         # kopio eksponentista
+    andq %rbx,%r13          # otetaan yksi bitti
+    je loope2               # bitti on nolla
+    call lasku              # suoritetaan jos bitti on yksi
+        
+loope2:                     # siirrytään seuraavaan
+    addq %rbx,%rbx          # siirretään maski seuraavaan bittiin
+    rrmovq %r9,%r13         # kopio eksponentista
+    subq %rbx,%r13          # testataan, onko maski isompi kuin eksponentti
+    jl doneloope            # jos on, valmis
+    call lasku2             # suoritetaan aina
+    jmp loope1              # jos ei, mennään käsittelemään seuraava bitti
+
+doneloope:
+    rrmovq %rcx,%rax        #tallennetaan vastaus
+    ret
+
+lasku:                      # vastaus := vastaus * kanta % modulo
+    rrmovq %rcx,%r11        # annetaan argumentit 
+    rrmovq %rdx,%r12        # ...
+    call kertolasku         # suoritetaan vastaus = vastaus * kanta
+    rrmovq %rax,%rcx        # tallennetaan vastaus
+
+    rrmovq %rcx,%r11        # annetaan argumentit
+    rrmovq %r10,%r12        # ...
+    call modulo             # suoritetaan vastaus = vastaus % modulo
+    rrmovq %rax,%rcx        # tallennetaan vastaus
+    ret
+
+lasku2:                     # kanta := kanta * kanta % modulo
+    rrmovq %rdx,%r11        # annetaan argumentit
+    rrmovq %rdx,%r12        # ...
+    call kertolasku         # suoritetaan kanta = kanta * kanta
+    rrmovq %rax,%rdx        # tallennetaan vastaus
+
+    rrmovq %rdx,%r11        # annetaan argumentit
+    rrmovq %r10,%r12        # ...
+    call modulo             # suoritetaan kanta = kanta % modulo
+    rrmovq %rax,%rdx        # tallennetaan vastaus
+    ret
+
+#-----------------------------------modulo--------------------------------------
+#käyttää rekistereitä r11, r12, r13 ja rax
+#argumentit:
+# %r11 = kanta / jaettava
+# %r12 = modulo / jakaja
+#vastaus:
+# %rax
+
+modulo:
+    irmovq $0,%r13          # tarkistetaan, onko jakaja 0
+    addq %r12,%r13          # ...
+    je nolla                # jos jakaja on 0
+    irmovq $0,%rax          # alustetaan tulos
+    pushq %r12              #tallennetaan jakaja
+    jmp modulo2
+    
+modulo2:
+    rrmovq %r11,%rax        # tallennetaan mahd. jakojäännös
+    subq %r12,%r11          # vähennetään
+    jl liiansuuri           # jos liian suuri
+    addq %r12,%r12          # muuten siirretään yksi bitti vasemmalle
+    jmp modulo2             # toistetaan
+
+liiansuuri:
+    rrmovq %rax,%r11        # palautetaan edellinen erotus 
+    mrmovq (%rsp),%r12      # palautetaan alkuperäinen jakaja
+    subq %r12,%r11          # tarkistetaan onko alkuperäinen liian suuri
+    jl donemodulo           # jos on, lasku valmis
+    rrmovq %rax,%r11        # muuten palautetaan edellinen erotus
+    jmp modulo2             # jatketaan laskua
+    
+nolla:
+    irmovq $0,%rax          # annetaan vastaukseksi 0
+    ret
+    
+donemodulo:
+    popq %r12               #poistetaan tallennettu jakaja pinosta
+    ret
+    
+#---------------------------------kertolasku------------------------------------
+#käyttää rekistereitä r11, r12, r13, r14, rsi, rdi ja rax
+#argumentit:
+# %r11 = kertoja
+# %r12 = kerrottava
+#vastaus:
+# %rax
+
+kertolasku:
+    irmovq $0x01,%rsi       # maski, pienin bitti
+    irmovq $0,%rdi          # bittisiirron laskuri
+    irmovq $0,%rax          # alustetaan summa/tulos
+    call kertoja            # haetaan argumentit, valitaan kertojaksi pienempi
+    irmovq $1,%r14          # vakio 1
+    jmp bitit1
+
+kertoja:                    # valitaan kertojaksi pienempi luku
+    pushq %r11              # tallennetaan r11
+    subq %r12,%r11          # vertailu
+    jl oikein               # pienempi on jo kertoja
+    rrmovq %r12,%r11        # vaihetaan toisin pain
+    popq %r12               # ...
+    ret
+    
+oikein:                     # pidetään alkuperäiset
+    popq %r11               # palautetaan %r11 takaisin
+    ret
+
+bitit1:                     # ensimmäinen bitti, ei bittisiirtoa
+    rrmovq %r11,%r13        # kertojasta kopio
+    andq %rsi,%r13          # otetaan yksi bitti
+    je maski                # bitti on nolla
+    addq %r12,%rax          # lisätään tulokseen
+    jmp maski
+
+bitit2:                     # muut bitit ja mahd. bittisiirrot
+    rrmovq %r11,%r13        # kertojasta kopio
+    andq %rsi,%r13          # otetaan yksi bitti
+    je maski                # bitti on nolla
+    pushq %rdi              # tallennetaan laskurin arvo
+    rrmovq %r12,%r13        # kopio kerrottavasta
+    jmp bittisiirto         # tehdään bittien siirto
+    
+maski:
+    addq %rsi,%rsi          # siirretään maski seuraavaan bittiin
+    rrmovq %r11,%r13        # kertojasta kopio
+    subq %rsi,%r13          # testataan, onko maski isompi kuin kertoja
+    jl donekertolasku       # jos on, lasku on valmis
+    addq %r14,%rdi          # lisätään yksi bittisiirtolaskuriin
+    jmp bitit2              # mennään käsittelemään seuraava bitti
+    
+bittisiirto: 
+    addq %r13,%r13          # siirretään yhdellä vasemmalle
+    subq %r14,%rdi          # vähennetään laskurista 1
+    jg bittisiirto          # jos laskuri > 0, siirretään uudestaan
+    addq %r13,%rax          # kun laskuri = 0, lisätään tulos summaan
+    popq %rdi               # palautetaan laskurin arvo ennalleen
+    jmp maski       
+    
+donekertolasku:
+    ret
+
+#---------------------------------jako kahdella---------------------------------
+#käyttää rekistereitä r8, r9, r10, r11 ja rax
+#argumentit:
+# %r8 = jaettava
+#vastaus: 
+# %rax
+
+puolitus:
+    irmovq $0x01,%r9    #maski
+    irmovq $0x01,%r10   #puolikas
+    irmovq $0,%rax      #alustetaan summa
+    jmp tarkistae
+    
+tarkistae:
+    addq %r9,%r9        #siirretään maski seuraavaan bittiin
+    rrmovq %r8,%r11     #haetaan jaettava
+    andq %r9,%r11
+    je tarkista         #bitti on 0
+    jmp yksi            #bitti on 1
+    
+tarkista:
+    rrmovq %r8,%r11     #tarkistetaan, ollaanko luvun lopussa
+    subq %r9,%r11       #jos ollaan, maski on isompi kuin luku
+    jl puolitusdone
+    addq %r10,%r10      #siirretään puolikas seuraavaan
+    addq %r9,%r9        #siirretään maski seuraavaan bittiin
+    rrmovq %r8,%r11     #haetaan jaettava
+    andq %r9,%r11       #otetaan bitti
+    je tarkista         #bitti on 0
+    jmp yksi            #bitti on 1
+
+yksi:
+    addq %r10,%rax
+    jmp tarkista
+
+puolitusdone: 
+    ret
+    
+#-------------------------------------------------------------------------------
+
+.pos 0x500
+pino:
+
+.pos 0x1800
+.align 8
+.quad 4
+.quad 7
+.quad 0
+    
