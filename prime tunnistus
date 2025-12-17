@@ -2,29 +2,36 @@
 # TKJ module 4 project 2025 Prime number
 # Miia Karhumaa, 2510050
 
-# Instruction estimates:
-# multiplication: 400-700
-# division by two: 200-400
-# modulo: 300-500
-# exponent modulo: 78000
-# I made the estimates by looking at the amount of instruvtions in the code and
-# asked ChatGPT to estimate the number of the loops for 64 bit numbers. 
+# Instruction estimates for a 4 digit number:
+# multiplication: 200
+# division by two: 100
+# modulo: 100
+# exponent modulo: 6000 (multiplication + modulo looped)
+# one millerrabin round: 25000 (setup + forloop + 4 x eksmod)
+# total (worst case scenario): 320000 (main + 12 x millerrabin)
+# On tests with 4 digit numbers, the number of total instructions stayed mostly 
+# under 150000, since most composite numbers exit the loop earlier.
+# I did the estimates by calculating the instructions and estimating the number of 
+# loops with ChatGPT's help. Increasing the number by a digit, would increase the
+# instruction count roughly about 25-45 % based on the increase in loops.
 
-# The algorithm gives some false positives, especially Carmichael numbers,
-# because these numbers pass the tests of the simplified algorithm that is 
-# used in the project.  
+# During initial coding, I didn't conciously make any optimation choices other than 
+# minimizing the number of register moves. For example, I calculated straight to 
+# the register instead of making copies everytime when I didn't need to save the 
+# original value, and saved the witness and p straight to the register the subroutine 
+# uses. In the test, it turned out taking a respectable amount of introductions so
+# I decided to leave it as it is regarding efficiency since it is working.
 
-# "addq %rax, %rax" is a single command for shifting bits left, but this only 
-# shifts them by one position. For more shifts, it needs to be repeated. Some
-# other architectures have built-in shifting operations.
-
-# Loops and subroutines could probably be optimized, especially the multiplication.
-
-# While coding, I didn't make any optimation choices other than minimizing the 
-# number of register moves. For example I calculated straight to the register 
-# instead of making copies everytime when I didn't need to save the original value.
-# Then in the test run, the instruction count stayed in 5 digits, so I decided 
-# not to touch it anymore because it is working.
+# However, there is still room for optimation. I tried to reuse code as 
+# much as possible, but that is not always the most efficient way I noticed. 
+# For example, in testing whether a number is even, I return -1 or 0 to a register 
+# in the subroutine and then test which one it is. Instead of a subroutine, it 
+# could be implented straight in, and I would not need to test the return value,
+# thus decreasing instructions by a few. However, I used the same algorithm in a 
+# different part of the code and that's why it uses return values. Other option 
+# would be copy paste, and implement it directly to the other part of the code 
+# too, but that would increase required memory storage and be more work. The 
+# calculation subroutines could probably also still be optimized.
 
 #------------------------------------main---------------------------------------
 
@@ -71,16 +78,16 @@ onkoparillinen:
     irmovq $0,%r10          # tarkistetaan, onko viimeinen 0 eli parillinen
     addq %r11,%r10          # ...
     je onparillinen         # jos parillinen
-    irmovq $0,%rax          # palautetaan 0
-    ret                     # jos ei, palataan takaisin
+    irmovq $0,%rax          # muussa tapauksessa palautetaan 0
+    ret                     # ...
 
 prime:
     rrmovq %rcx,%rax
     halt                    # lopetetaan suoritus ja palautetaan prime-numero
     
 onparillinen:               # kyseessä parillinen luku
-    irmovq $-1,%rax         # palautetaan -1 merkiksi, että ei ole prime
-    ret
+    irmovq $-1,%rax         # palautetaan -1 
+    ret                     # ...
     
 done:                       # kyseinen subroutine on valmis
     ret
@@ -90,7 +97,7 @@ loppu:                      # saavutettiin listassa 0, ei prime numeroita
     halt                    # lopetetaan ohjelma
     
 composite2:                 # kyseessä composite luku
-    popq %r13               # poistetaan edellisen call-kutsun ret pinosta
+    popq %r13               # poistetaan edellinen call-kutsu ret pinosta
     ret                     # palataan mainlooppiin
 
 composite3:                 # kyseessä composite luku
@@ -100,30 +107,66 @@ composite3:                 # kyseessä composite luku
 
 loopmillerrabin:            # testataan kaikille eri witnesseille
     irmovq $2,%r8           # witness
-    call millerrabin
+    irmovq $-2,%r12         # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $3,%r8           # witness
-    call millerrabin
+    irmovq $-3,%r12         # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $5,%r8           # witness
-    call millerrabin
+    irmovq $-5,%r12         # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $7,%r8           # witness
-    call millerrabin
+    irmovq $-7,%r12         # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta    
     irmovq $11,%r8          # witness
-    call millerrabin
+    irmovq $-11,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $13,%r8          # witness
-    call millerrabin
+    irmovq $-13,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta    
     irmovq $17,%r8          # witness
-    call millerrabin
+    irmovq $-17,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $19,%r8          # witness
-    call millerrabin
+    irmovq $-19,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $23,%r8          # witness
-    call millerrabin
+    irmovq $-23,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $29,%r8          # witness
-    call millerrabin
+    irmovq $-29,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $31,%r8          # witness
-    call millerrabin
+    irmovq $-31,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
     irmovq $37,%r8          # witness
-    call millerrabin
-    ret
+    irmovq $-37,%r12        # testataan, että number > witness
+    addq %rcx,%r12          # ...
+    jle prime               # jos ei, lopetetaan ja palautetaan prime
+    call millerrabin        # muussa tapauksessa jatketaan testausta
+    jmp prime               # jos ohjelma palaa, palautetaan prime
 
 millerrabin:                # millerrabin algoritmi
     rrmovq %rcx,%r9         # otetaan kopio luvusta
@@ -145,7 +188,7 @@ forloop:                    # for (;;)
     call parillinen         # if (p & 1)
     irmovq $0,%r9           # ...
     subq %rax,%r9           # ...
-    je prime                # return prime 
+    je possiblyprime        # palataan testaamaan seuraava witness 
     
     pushq %r8               # tallennetaan witness
     rrmovq %r9,%r8          # annetaan argumentti p
@@ -163,9 +206,12 @@ forloop:                    # for (;;)
     irmovq $-1,%r13         # if (result == number - 1)
     addq %r12,%r13          # ...
     subq %rax,%r13          # ...
-    je prime                # return prime
+    je possiblyprime        # palataan testaamaan seuraava witness
     
     jmp composite3
+    
+possiblyprime:
+    ret                     # palataan loopmillerrabin
     
     
 #int miller_rabin_round(const u64 number, const u64 witness)
@@ -244,7 +290,7 @@ loope2:                     # siirrytään seuraavaan
     jmp loope1              # jos ei, mennään käsittelemään seuraava bitti
 
 doneloope:
-    rrmovq %rcx,%rax        #tallennetaan vastaus
+    rrmovq %rcx,%rax        # tallennetaan vastaus
     ret
 
 lasku:                      # vastaus := vastaus * kanta % modulo
@@ -380,28 +426,28 @@ donekertolasku:
 # %rax
 
 puolitus:
-    irmovq $0x01,%r9    #maski
-    irmovq $0x01,%r10   #puolikas
-    irmovq $0,%rax      #alustetaan summa
+    irmovq $0x01,%r9    # maski
+    irmovq $0x01,%r10   # puolikas
+    irmovq $0,%rax      # alustetaan summa
     jmp tarkistae
     
 tarkistae:
-    addq %r9,%r9        #siirretään maski seuraavaan bittiin
-    rrmovq %r8,%r11     #haetaan jaettava
+    addq %r9,%r9        # siirretään maski seuraavaan bittiin
+    rrmovq %r8,%r11     # haetaan jaettava
     andq %r9,%r11
-    je tarkista         #bitti on 0
-    jmp yksi            #bitti on 1
+    je tarkista         # bitti on 0
+    jmp yksi            # bitti on 1
     
 tarkista:
-    rrmovq %r8,%r11     #tarkistetaan, ollaanko luvun lopussa
-    subq %r9,%r11       #jos ollaan, maski on isompi kuin luku
+    rrmovq %r8,%r11     # tarkistetaan, ollaanko luvun lopussa
+    subq %r9,%r11       # jos ollaan, maski on isompi kuin luku
     jl puolitusdone
-    addq %r10,%r10      #siirretään puolikas seuraavaan
-    addq %r9,%r9        #siirretään maski seuraavaan bittiin
-    rrmovq %r8,%r11     #haetaan jaettava
-    andq %r9,%r11       #otetaan bitti
-    je tarkista         #bitti on 0
-    jmp yksi            #bitti on 1
+    addq %r10,%r10      # siirretään puolikas seuraavaan
+    addq %r9,%r9        # siirretään maski seuraavaan bittiin
+    rrmovq %r8,%r11     # haetaan jaettava
+    andq %r9,%r11       # otetaan bitti
+    je tarkista         # bitti on 0
+    jmp yksi            # bitti on 1
 
 yksi:
     addq %r10,%rax
@@ -413,5 +459,5 @@ puolitusdone:
 #-------------------------------------------------------------------------------
 
 .pos 0x1000
-pino:    
+pino:
     
